@@ -1,5 +1,6 @@
 const descriptor = require("./compiler/descriptor");
 const ts = require("typescript");
+const { camelCase } = require('./change-case');
 const type = require("./type");
 const field = require("./field");
 
@@ -41,9 +42,10 @@ function createFromObject(rootDescriptor, messageDescriptor) {
     const properties = [];
 
     for (const fieldDescriptor of messageDescriptor.field) {
+        const fieldName = camelCase(fieldDescriptor.name);
         let assignmentExpr = ts.factory.createPropertyAccessExpression(
             dataIdentifier,
-            fieldDescriptor.name
+            fieldName
         );
 
         if (field.isMap(fieldDescriptor)) {
@@ -169,7 +171,7 @@ function createFromObject(rootDescriptor, messageDescriptor) {
                     [
                         ts.factory.createPropertyAccessExpression(
                             dataIdentifier,
-                            fieldDescriptor.name
+                            fieldName
                         ),
                     ]
                 );
@@ -179,7 +181,7 @@ function createFromObject(rootDescriptor, messageDescriptor) {
         if (field.isOptional(rootDescriptor, fieldDescriptor)) {
             const propertyAccessor = ts.factory.createPropertyAccessExpression(
                 dataIdentifier,
-                fieldDescriptor.name
+                fieldName
             );
             let condition = ts.factory.createBinaryExpression(
                 propertyAccessor,
@@ -204,7 +206,7 @@ function createFromObject(rootDescriptor, messageDescriptor) {
                                 ts.factory.createBinaryExpression(
                                     ts.factory.createPropertyAccessExpression(
                                         messageIdentifier,
-                                        fieldDescriptor.name
+                                        fieldName
                                     ),
                                     ts.factory.createToken(ts.SyntaxKind.EqualsToken),
                                     assignmentExpr
@@ -218,7 +220,7 @@ function createFromObject(rootDescriptor, messageDescriptor) {
         } else {
             properties.push(
                 ts.factory.createPropertyAssignment(
-                    fieldDescriptor.name,
+                    fieldName,
                     assignmentExpr
                 )
             );
@@ -286,7 +288,7 @@ function createToObject(rootDescriptor, messageDescriptor) {
     for (const fieldDescriptor of messageDescriptor.field) {
         let valueExpr = ts.factory.createPropertyAccessExpression(
             ts.factory.createThis(),
-            fieldDescriptor.name
+            camelCase(fieldDescriptor.name)
         );
 
         if (field.isMap(fieldDescriptor)) {
@@ -398,7 +400,7 @@ function createToObject(rootDescriptor, messageDescriptor) {
         if (field.isOptional(rootDescriptor, fieldDescriptor)) {
             const propertyAccessor = ts.factory.createPropertyAccessExpression(
                 ts.factory.createThis(),
-                fieldDescriptor.name
+                camelCase(fieldDescriptor.name)
             );
             let condition = ts.factory.createBinaryExpression(
                 propertyAccessor,
@@ -423,7 +425,7 @@ function createToObject(rootDescriptor, messageDescriptor) {
                     ts.factory.createBlock([
                         ts.factory.createExpressionStatement(
                             ts.factory.createBinaryExpression(
-                                ts.factory.createPropertyAccessExpression(dataIdentifier, fieldDescriptor.name),
+                                ts.factory.createPropertyAccessExpression(dataIdentifier, camelCase(fieldDescriptor.name)),
                                 ts.factory.createToken(ts.SyntaxKind.EqualsToken),
                                 valueExpr
                             )
@@ -434,7 +436,7 @@ function createToObject(rootDescriptor, messageDescriptor) {
         } else {
             properties.push(
                 ts.factory.createPropertyAssignment(
-                    fieldDescriptor.name,
+                    camelCase(fieldDescriptor.name),
                     valueExpr
                 )
             );
@@ -530,7 +532,7 @@ function createMessageSignature(rootDescriptor, messageDescriptor) {
                 }
                 members.push(ts.factory.createPropertySignature(
                     undefined,
-                    fieldDescriptor.name,
+                    camelCase(fieldDescriptor.name),
                     ts.factory.createToken(ts.SyntaxKind.QuestionToken),
                     fieldType
                 ))
@@ -560,7 +562,7 @@ function createMessageSignature(rootDescriptor, messageDescriptor) {
         fieldSignatures.push(
             ts.factory.createPropertySignature(
                 undefined,
-                fieldDescriptor.name,
+                camelCase(fieldDescriptor.name),
                 field.isOptional(rootDescriptor, fieldDescriptor) ? ts.factory.createToken(ts.SyntaxKind.QuestionToken) : undefined,
                 fieldType
             )
@@ -634,7 +636,7 @@ function createPrimitiveMessageSignature(rootDescriptor, messageDescriptor) {
         fieldSignatures.push(
             ts.factory.createPropertySignature(
                 undefined,
-                fieldDescriptor.name,
+                camelCase(fieldDescriptor.name),
                 field.isOptional(rootDescriptor, fieldDescriptor) ? ts.factory.createToken(ts.SyntaxKind.QuestionToken) : undefined,
                 fieldType
             )
@@ -742,12 +744,12 @@ function createConstructor(
                             ts.factory.createBinaryExpression(
                                 ts.factory.createPropertyAccessExpression(
                                     ts.factory.createThis(),
-                                    fieldDescriptor.name
+                                    camelCase(fieldDescriptor.name)
                                 ),
                                 ts.SyntaxKind.EqualsToken,
                                 ts.factory.createPropertyAccessExpression(
                                     dataIdentifier,
-                                    fieldDescriptor.name
+                                    camelCase(fieldDescriptor.name)
                                 )
                             )
                         );
@@ -757,7 +759,7 @@ function createConstructor(
                         return ts.factory.createIfStatement(
                             ts.factory.createBinaryExpression(
                                 ts.factory.createBinaryExpression(
-                                    ts.factory.createStringLiteral(fieldDescriptor.name),
+                                    ts.factory.createStringLiteral(camelCase(fieldDescriptor.name)),
                                     ts.factory.createToken(ts.SyntaxKind.InKeyword),
                                     dataIdentifier
                                 ),
@@ -766,7 +768,7 @@ function createConstructor(
                                 ts.factory.createBinaryExpression(
                                     ts.factory.createPropertyAccessExpression(
                                         dataIdentifier,
-                                        fieldDescriptor.name
+                                        camelCase(fieldDescriptor.name)
                                     ),
                                     ts.factory.createToken(ts.SyntaxKind.ExclamationEqualsToken),
                                     ts.factory.createIdentifier("undefined"),
@@ -783,7 +785,7 @@ function createConstructor(
         if (!field.isMap(fieldDescriptor)) {
             continue;
         }
-        let propertyAccessor = ts.factory.createPropertyAccessExpression(ts.factory.createThis(), fieldDescriptor.name);
+        let propertyAccessor = ts.factory.createPropertyAccessExpression(ts.factory.createThis(), camelCase(fieldDescriptor.name));
         statements.push(
             ts.factory.createIfStatement(
                 ts.factory.createPrefixUnaryExpression(
@@ -846,7 +848,7 @@ function createGetter(
     return ts.factory.createGetAccessorDeclaration(
         undefined,
         undefined,
-        fieldDescriptor.name,
+        camelCase(fieldDescriptor.name),
         undefined,
         undefined,
         ts.factory.createBlock([
@@ -1038,7 +1040,7 @@ function createSetter(
     return ts.factory.createSetAccessorDeclaration(
         undefined,
         undefined,
-        fieldDescriptor.name,
+        camelCase(fieldDescriptor.name),
         [ts.factory.createParameterDeclaration(
             undefined,
             undefined,
@@ -1167,7 +1169,7 @@ function createSerialize(rootDescriptor, messageDescriptor, pbIdentifier) {
     for (const fieldDescriptor of messageDescriptor.field) {
         const propAccessor = ts.factory.createPropertyAccessExpression(
             ts.factory.createThis(),
-            fieldDescriptor.name
+            camelCase(fieldDescriptor.name)
         );
 
         if (field.isMap(fieldDescriptor)) {
@@ -1314,7 +1316,7 @@ function createSerialize(rootDescriptor, messageDescriptor, pbIdentifier) {
                                 ts.factory.createPropertyAccessExpression(
                                     ts.factory.createPropertyAccessExpression(
                                         ts.factory.createThis(),
-                                        fieldDescriptor.name
+                                        camelCase(fieldDescriptor.name)
                                     ),
                                     "serialize"
                                 ),
@@ -1525,7 +1527,7 @@ function createDeserialize(
                         [
                             ts.factory.createIdentifier("message"),
                             ts.factory.createNumericLiteral(
-                                fieldDescriptor.number
+                                camelCase(fieldDescriptor.number)
                             ),
                             ts.factory.createCallExpression(
                                 ts.factory.createPropertyAccessExpression(
@@ -1651,7 +1653,7 @@ function createDeserialize(
                                         ts.factory.createAsExpression(
                                             ts.factory.createPropertyAccessExpression(
                                                 ts.factory.createIdentifier("message"),
-                                                fieldDescriptor.name
+                                                camelCase(fieldDescriptor.name)
                                             ),
                                             ts.factory.createToken(ts.SyntaxKind.AnyKeyword)
                                         ),
@@ -1689,7 +1691,7 @@ function createDeserialize(
                         [
                             ts.factory.createPropertyAccessExpression(
                                 ts.factory.createIdentifier("message"),
-                                fieldDescriptor.name
+                                camelCase(fieldDescriptor.name)
                             ),
                             ts.factory.createArrowFunction(
                                 undefined,
@@ -1711,7 +1713,7 @@ function createDeserialize(
                                         undefined,
                                         [
                                             ts.factory.createIdentifier("message"),
-                                            ts.factory.createNumericLiteral(fieldDescriptor.number),
+                                            ts.factory.createNumericLiteral(camelCase(fieldDescriptor.number)),
                                             readCall,
                                             type.getTypeReference(rootDescriptor, fieldDescriptor.type_name),
                                         ]
@@ -1719,7 +1721,7 @@ function createDeserialize(
                                     : ts.factory.createBinaryExpression(
                                         ts.factory.createPropertyAccessExpression(
                                             ts.factory.createIdentifier("message"),
-                                            fieldDescriptor.name
+                                            camelCase(fieldDescriptor.name)
                                         ),
                                         ts.SyntaxKind.EqualsToken,
                                         readCall
@@ -1735,7 +1737,7 @@ function createDeserialize(
                     ts.factory.createBinaryExpression(
                         ts.factory.createPropertyAccessExpression(
                             ts.factory.createIdentifier("message"),
-                            fieldDescriptor.name
+                            camelCase(fieldDescriptor.name)
                         ),
                         ts.SyntaxKind.EqualsToken,
                         ts.factory.createCallExpression(
@@ -1755,7 +1757,7 @@ function createDeserialize(
         statements.push(ts.factory.createBreakStatement());
 
         cases.push(ts.factory.createCaseClause(
-            ts.factory.createNumericLiteral(fieldDescriptor.number),
+            ts.factory.createNumericLiteral(camelCase(fieldDescriptor.number)),
             statements
         ))
 
@@ -2029,6 +2031,27 @@ function createMessage(
  * @param {descriptor.DescriptorProto} descriptor
  * @param {ts.Identifier} pbIdentifier
  */
+function createMessageInterface(
+    rootDescriptor,
+    descriptor,
+    pbIdentifier
+) {
+    const messageType = createMessageSignature(rootDescriptor, descriptor)
+    return ts.factory.createInterfaceDeclaration(
+        undefined,
+        [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+        ts.factory.createIdentifier(`I${descriptor.name}`),
+        undefined,
+        undefined,
+        messageType.members
+    )
+}
+
+/**
+ * @param {descriptor.FileDescriptorProto} rootDescriptor
+ * @param {descriptor.DescriptorProto} descriptor
+ * @param {ts.Identifier} pbIdentifier
+ */
 function processDescriptorRecursively(
     rootDescriptor,
     descriptor,
@@ -2036,7 +2059,8 @@ function processDescriptorRecursively(
 ) {
 
     const statements = [
-        createMessage(rootDescriptor, descriptor, pbIdentifier)
+        createMessage(rootDescriptor, descriptor, pbIdentifier),
+        createMessageInterface(rootDescriptor, descriptor, pbIdentifier)
     ];
 
     const namespacedStatements = [];
@@ -2052,6 +2076,8 @@ function processDescriptorRecursively(
     if (namespacedStatements.length) {
         statements.push(createNamespace(descriptor.name, namespacedStatements));
     }
+    // create message interface
+
 
     return statements;
 }
